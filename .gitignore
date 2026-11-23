@@ -1,3 +1,8 @@
+# Database Files
+*.db
+*.sqlite
+*.sqlite3
+
 # Operating System
 .DS_Store
 .DS_Store?
