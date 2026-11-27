@@ -183,3 +183,27 @@ export function getExportLogsUrl({ format = 'csv', search = '', eventType = 'ALL
   if (status && status !== 'ALL') params.append('status', status);
   return `${BASE_URL}/api/v1/logs/export?${params.toString()}`;
 }
+
+// ----------------- MODULE 3: THREAT INTELLIGENCE API -----------------
+
+export async function investigateIndicator(indicator) {
+  const clean = indicator.trim();
+  const res = await fetch(`${BASE_URL}/api/v1/threat-intel/investigate?indicator=${encodeURIComponent(clean)}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: { message: 'Investigation lookup failed' } }));
+    throw new Error(err.error?.message || err.detail || 'Failed to investigate indicator');
+  }
+  return await res.json();
+}
+
+export async function fetchThreatIntelSamples() {
+  const res = await fetch(`${BASE_URL}/api/v1/threat-intel/samples`);
+  if (!res.ok) throw new Error('Failed to fetch threat intel sample indicators');
+  return await res.json();
+}
+
+export async function fetchThreatIntelStatus() {
+  const res = await fetch(`${BASE_URL}/api/v1/threat-intel/status`);
+  if (!res.ok) throw new Error('Failed to fetch threat intel provider status');
+  return await res.json();
+}

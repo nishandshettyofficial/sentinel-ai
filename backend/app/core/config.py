@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     PORT: int = 8000
     DATABASE_URL: str = "sqlite:///./sentinel.db"
     CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:3000", "*"]
+    VIRUSTOTAL_API_KEY: str = ""
+    ABUSEIPDB_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
 
 settings = Settings()
