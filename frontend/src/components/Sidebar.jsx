@@ -7,7 +7,7 @@ import {
   AlertTriangle, 
   FileSpreadsheet,
   Cpu,
-  ChevronRight
+  Database
 } from 'lucide-react';
 
 const NAVIGATION_ITEMS = [
@@ -19,7 +19,11 @@ const NAVIGATION_ITEMS = [
   { id: 'reports', name: 'Reports Generator', icon: FileSpreadsheet, badge: 'PDF', active: false }
 ];
 
-export default function Sidebar({ currentTab, onSelectTab, systemStatus }) {
+export default function Sidebar({ currentTab, onSelectTab, systemStatus, systemHealth }) {
+  const dbEngine = systemHealth?.database?.engine || 'SQL';
+  const dbLatency = systemHealth?.database?.latency_ms || 0;
+  const rulesCount = systemHealth?.detection_engine?.rules_count || 5;
+
   return (
     <aside className="w-64 border-r border-slate-800 bg-[#090d16]/80 flex flex-col justify-between p-4 shrink-0 hidden md:flex">
       <div className="space-y-6">
@@ -63,7 +67,7 @@ export default function Sidebar({ currentTab, onSelectTab, systemStatus }) {
         </div>
 
         {/* Security Readiness Status Card */}
-        <div className="p-3.5 rounded-lg bg-slate-900/80 border border-slate-800 space-y-2">
+        <div className="p-3.5 rounded-lg bg-slate-900/80 border border-slate-800 space-y-2.5">
           <div className="flex items-center justify-between text-xs font-mono">
             <span className="text-slate-400 flex items-center space-x-1.5">
               <Cpu className="w-3.5 h-3.5 text-cyan-400" />
@@ -77,15 +81,27 @@ export default function Sidebar({ currentTab, onSelectTab, systemStatus }) {
               {systemStatus || 'ONLINE'}
             </span>
           </div>
-          <div className="text-[11px] text-slate-400 leading-relaxed">
-            Perimeter firewall & log ingestion agents active across all subnets.
+
+          <div className="space-y-1 text-[11px] font-mono text-slate-400 border-t border-slate-800/80 pt-2">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center space-x-1 text-slate-500">
+                <Database className="w-3 h-3" />
+                <span>DB Engine:</span>
+              </span>
+              <span className="text-slate-300 uppercase">{dbEngine} ({dbLatency}ms)</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-slate-500">Detection Rules:</span>
+              <span className="text-cyan-400 font-bold">{rulesCount} Active</span>
+            </div>
           </div>
+
           <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
             <div className="bg-gradient-to-r from-cyan-500 to-emerald-400 h-full w-[96%]"></div>
           </div>
           <div className="flex justify-between text-[10px] font-mono text-slate-500">
-            <span>SOC Health</span>
-            <span>96% Nominal</span>
+            <span>SOC Integrity</span>
+            <span>96% Optimal</span>
           </div>
         </div>
       </div>

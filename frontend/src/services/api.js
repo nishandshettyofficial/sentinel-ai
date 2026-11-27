@@ -1,13 +1,22 @@
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export async function fetchHealth() {
+  const t0 = performance.now();
   try {
-    const res = await fetch(`${BASE_URL}/health`);
+    const res = await fetch(`${BASE_URL}/api/v1/health/detailed`);
+    const latency = Math.round(performance.now() - t0);
     if (!res.ok) throw new Error('Health check failed');
-    return await res.json();
+    const data = await res.json();
+    return { ...data, client_latency_ms: latency };
   } catch (err) {
     console.warn('API Health Check Error:', err);
-    return { status: 'offline', subsystems: {} };
+    return {
+      status: 'offline',
+      client_latency_ms: 0,
+      database: { status: 'offline', latency_ms: 0 },
+      detection_engine: { status: 'offline', rules_count: 5 },
+      subsystems: {}
+    };
   }
 }
 
@@ -59,19 +68,7 @@ export async function fetchRecentActivity(limit = 10) {
     return await res.json();
   } catch (err) {
     console.warn('Recent activity fetch failed, using fallback:', err);
-    return [
-      {
-        id: 1,
-        timestamp: new Date().toISOString(),
-        event_type: 'AUTH_FAILED',
-        action: 'SSH_LOGIN',
-        source_ip: '185.220.101.45',
-        user_identity: 'root',
-        status: 'BLOCKED',
-        severity: 'CRITICAL',
-        details: { port: 22, attempts: 5 }
-      }
-    ];
+    return [];
   }
 }
 
@@ -97,8 +94,8 @@ export async function uploadLogFile(file) {
     body: formData
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: 'Upload failed' }));
-    throw new Error(err.detail || 'Failed to upload log file');
+    const err = await res.json().catch(() => ({ error: { message: 'Upload failed' } }));
+    throw new Error(err.error?.message || err.detail || 'Failed to upload log file');
   }
   return await res.json();
 }
@@ -110,8 +107,8 @@ export async function ingestRawLogs(content, format = 'csv', filename = 'manual_
     body: JSON.stringify({ content, format, filename })
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: 'Ingestion failed' }));
-    throw new Error(err.detail || 'Failed to ingest raw logs');
+    const err = await res.json().catch(() => ({ error: { message: 'Ingestion failed' } }));
+    throw new Error(err.error?.message || err.detail || 'Failed to ingest raw logs');
   }
   return await res.json();
 }

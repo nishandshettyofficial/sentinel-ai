@@ -10,6 +10,10 @@
 * **Backend**: Python 3.13, FastAPI, SQLAlchemy 2.0, Pydantic V2
 * **Database**: PostgreSQL (Supabase compatible) / SQLite local fallback
 * **Detection Engine**: Correlated rule-based analysis (Brute Force, Password Spraying, Port Scan, Privilege Escalation, C2 Beacons)
+* **API Foundation & Observability**:
+  * Unified structured error handling (`code`, `message`, `details`, `request_id`, `timestamp`)
+  * `SecurityTelemetryMiddleware`: Injects `X-Request-ID` and high-precision `X-Process-Time` (latency in ms)
+  * Deep Health Check: Live DB ping latency, telemetry counts, and detection rules registry
 * **AI Analysis**: Gemini API (structured incident reasoning & defensive recommendations)
 * **Reports**: Automated PDF generator (ReportLab)
 
@@ -32,7 +36,10 @@ pip install -r requirements.txt
 # Run the FastAPI server
 uvicorn backend.app.main:app --reload --port 8000
 ```
-API Documentation is available at `http://localhost:8000/docs`.
+* Interactive API Documentation (Swagger): `http://localhost:8000/docs`
+* ReDoc Documentation: `http://localhost:8000/redoc`
+* Basic Health Check: `http://localhost:8000/health`
+* Deep SOC Diagnostics: `http://localhost:8000/api/v1/health/detailed`
 
 ### 2. Frontend Setup (React + Vite)
 ```bash
@@ -51,6 +58,11 @@ Open `http://localhost:5173` in your browser.
 
 ## 📊 Modules & Roadmap
 
+- [x] **Backend Foundation & Telemetry Core**
+  - Modular FastAPI architecture with structured routing
+  - Global standardized error responses (`HTTPException`, `RequestValidationError`, `SentinelException`)
+  - Request correlation ID (`X-Request-ID`) & latency timing (`X-Process-Time`)
+  - Deep diagnostics endpoint checking live DB ping and detection rule status
 - [x] **Module 1: Security Dashboard**
   - Real-time SOC event telemetry & metrics
   - Severity breakdown (Critical, High, Medium, Low)

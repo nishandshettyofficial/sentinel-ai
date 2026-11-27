@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldAlert, RefreshCw, Terminal, Activity, Wifi, WifiOff } from 'lucide-react';
+import { ShieldAlert, RefreshCw, Activity, Wifi, WifiOff, Zap } from 'lucide-react';
 
-export default function Navbar({ onRefresh, isRefreshing, isConnected }) {
+export default function Navbar({ onRefresh, isRefreshing, isConnected, latency }) {
   const [currentTime, setCurrentTime] = useState(new Date().toUTCString());
 
   useEffect(() => {
@@ -50,14 +50,20 @@ export default function Navbar({ onRefresh, isRefreshing, isConnected }) {
           <span>{currentTime}</span>
         </div>
 
-        {/* Connection status */}
-        <div className={`flex items-center space-x-1.5 text-xs font-mono px-2.5 py-1 rounded border ${
+        {/* Connection & Latency status */}
+        <div className={`flex items-center space-x-2 text-xs font-mono px-2.5 py-1 rounded border ${
           isConnected 
             ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-400' 
             : 'bg-amber-950/40 border-amber-500/30 text-amber-400'
         }`}>
           {isConnected ? <Wifi className="w-3.5 h-3.5" /> : <WifiOff className="w-3.5 h-3.5" />}
-          <span className="text-[11px] hidden md:inline">{isConnected ? 'API CONNECTED' : 'OFFLINE CACHE'}</span>
+          <span className="text-[11px] hidden md:inline">{isConnected ? 'API ONLINE' : 'OFFLINE MODE'}</span>
+          {isConnected && latency > 0 && (
+            <span className="text-[10px] px-1 rounded bg-emerald-900/60 border border-emerald-500/30 flex items-center space-x-0.5">
+              <Zap className="w-2.5 h-2.5 text-emerald-300" />
+              <span>{latency}ms</span>
+            </span>
+          )}
         </div>
 
         {/* Refresh Button */}

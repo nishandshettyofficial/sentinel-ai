@@ -10,14 +10,7 @@ import {
   fetchRecentActivity, 
   fetchRecentAlerts 
 } from './services/api';
-import { 
-  FileText, 
-  Globe2, 
-  Bot, 
-  AlertTriangle, 
-  FileSpreadsheet,
-  Construction
-} from 'lucide-react';
+import { Construction } from 'lucide-react';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState('dashboard');
@@ -27,12 +20,16 @@ export default function App() {
   const [alerts, setAlerts] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [latency, setLatency] = useState(0);
+  const [systemHealth, setSystemHealth] = useState(null);
 
   const loadData = async () => {
     setIsRefreshing(true);
     try {
       const health = await fetchHealth();
       setIsConnected(health.status === 'healthy');
+      setLatency(health.client_latency_ms || 0);
+      setSystemHealth(health);
 
       const [sumData, trendData, actData, alertData] = await Promise.all([
         fetchDashboardSummary(),
@@ -64,7 +61,8 @@ export default function App() {
       <Navbar 
         onRefresh={loadData} 
         isRefreshing={isRefreshing} 
-        isConnected={isConnected} 
+        isConnected={isConnected}
+        latency={latency}
       />
 
       <div className="flex-1 flex overflow-hidden">
@@ -72,6 +70,7 @@ export default function App() {
           currentTab={currentTab} 
           onSelectTab={setCurrentTab} 
           systemStatus={summary?.system_status}
+          systemHealth={systemHealth}
         />
 
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
