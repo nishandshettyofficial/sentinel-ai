@@ -82,6 +82,7 @@ export default function App() {
                 activities={activities}
                 alerts={alerts}
                 onNavigateTab={setCurrentTab}
+                onRefresh={loadData}
               />
             )}
 

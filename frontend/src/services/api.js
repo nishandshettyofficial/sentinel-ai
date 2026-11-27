@@ -83,6 +83,36 @@ export async function fetchRecentAlerts(limit = 6) {
   }
 }
 
+export async function fetchAlerts({ page = 1, limit = 20, severity = 'ALL', status = 'ALL', search = '' } = {}) {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString()
+  });
+  if (severity && severity !== 'ALL') params.append('severity', severity);
+  if (status && status !== 'ALL') params.append('status', status);
+  if (search) params.append('search', search);
+
+  const res = await fetch(`${BASE_URL}/api/v1/alerts?${params.toString()}`);
+  if (!res.ok) throw new Error('Failed to fetch alerts list');
+  return await res.json();
+}
+
+export async function fetchAlertById(alertId) {
+  const res = await fetch(`${BASE_URL}/api/v1/alerts/${alertId}`);
+  if (!res.ok) throw new Error(`Failed to fetch alert ${alertId}`);
+  return await res.json();
+}
+
+export async function updateAlertStatus(alertId, newStatus) {
+  const res = await fetch(`${BASE_URL}/api/v1/alerts/${alertId}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: newStatus })
+  });
+  if (!res.ok) throw new Error(`Failed to update status for alert ${alertId}`);
+  return await res.json();
+}
+
 // ----------------- MODULE 2: LOG ANALYZER API -----------------
 
 export async function uploadLogFile(file) {

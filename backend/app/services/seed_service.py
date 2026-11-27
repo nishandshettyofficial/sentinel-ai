@@ -102,6 +102,43 @@ def seed_initial_security_data(db: Session):
             }
         },
         {
+            "title": "Potential Multi-IP Concurrent Access Anomaly for 'sarah.lead'",
+            "description": "User identity 'sarah.lead' was accessed from 3 distinct IP addresses (192.168.1.101, 185.199.108.153, 203.0.113.195) within 5 minutes. Note: Unconfirmed anomaly pending verification of authorized VPN or multi-device usage.",
+            "severity": "CRITICAL",
+            "status": "NEW",
+            "rule_name": "RULE_MULTI_IP_ACCOUNT_ACCESS",
+            "source_ip": "192.168.1.101, 185.199.108.153",
+            "target_user": "sarah.lead",
+            "mins_ago": 15,
+            "evidence": {
+                "target_user": "sarah.lead",
+                "distinct_ip_count": 3,
+                "distinct_ips": ["192.168.1.101", "185.199.108.153", "203.0.113.195"],
+                "verification_status": "UNCONFIRMED_ANOMALY",
+                "disclaimer": "Alert represents a detected behavioral anomaly and must be investigated before confirming as malicious.",
+                "recommendation": "Prompt user to confirm active sessions and verify corporate VPN usage."
+            }
+        },
+        {
+            "title": "Suspicious Telemetry Activity Spike Detected from 194.26.29.11",
+            "description": "Observed sudden activity spike of 12 events originating from source IP 194.26.29.11 within 20 seconds. Note: This alert reflects an unconfirmed security anomaly pending baseline traffic verification.",
+            "severity": "HIGH",
+            "status": "NEW",
+            "rule_name": "RULE_ACTIVITY_SPIKE",
+            "source_ip": "194.26.29.11",
+            "target_user": "guest_user",
+            "mins_ago": 35,
+            "evidence": {
+                "source_ip": "194.26.29.11",
+                "event_count": 12,
+                "dominant_action": "ENDPOINT_PROBE",
+                "time_window_seconds": 20.0,
+                "verification_status": "UNCONFIRMED_ANOMALY",
+                "disclaimer": "Alert represents a detected behavioral anomaly and must be investigated before confirming as malicious.",
+                "recommendation": "Inspect ingress rate-limiting headers and verify client certificate."
+            }
+        },
+        {
             "title": "External Reconnaissance Port Sweep",
             "description": "Aggressive TCP SYN sweep scanning common administrative ports (21, 22, 80, 443, 3389).",
             "severity": "LOW",

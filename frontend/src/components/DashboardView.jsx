@@ -21,7 +21,8 @@ export default function DashboardView({
   trends, 
   activities, 
   alerts, 
-  onNavigateTab 
+  onNavigateTab,
+  onRefresh
 }) {
   return (
     <div className="space-y-6">
@@ -154,7 +155,7 @@ export default function DashboardView({
               {alerts.length} ALERTS
             </span>
           </div>
-          <AlertsList alerts={alerts} />
+          <AlertsList alerts={alerts} onAlertUpdated={onRefresh} />
         </div>
 
         {/* Real-time Activity Stream */}

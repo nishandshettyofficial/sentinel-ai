@@ -404,17 +404,29 @@ export default function LogAnalyzerView({ onTelemetryUpdated }) {
                 {uploadResult.alerts.map((al) => (
                   <div key={al.id} className="p-3 rounded-lg bg-slate-900/90 border border-slate-800 space-y-1.5 text-xs">
                     <div className="flex items-center justify-between">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${getSeverityStyle(al.severity)}`}>
-                        {al.severity}
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${getSeverityStyle(al.severity)}`}>
+                          {al.severity}
+                        </span>
+                        <span className="text-[9px] font-mono text-amber-400 bg-amber-950/50 px-1.5 py-0.5 rounded border border-amber-500/30">
+                          UNCONFIRMED
+                        </span>
+                      </div>
                       <span className="text-[10px] font-mono text-cyan-400">{al.rule_name}</span>
                     </div>
                     <h4 className="font-semibold text-slate-200">{al.title}</h4>
                     <p className="text-[11px] text-slate-400">{al.description}</p>
                     {al.evidence && (
-                      <div className="pt-1.5 border-t border-slate-800/80 text-[10px] font-mono text-slate-400">
-                        {al.source_ip && <span>SRC: <b className="text-slate-300">{al.source_ip}</b> </span>}
-                        {al.target_user && <span>• TGT: <b className="text-slate-300">{al.target_user}</b></span>}
+                      <div className="pt-1.5 border-t border-slate-800/80 text-[10px] font-mono text-slate-400 space-y-1">
+                        <div className="flex items-center justify-between">
+                          {al.source_ip && <span>SRC: <b className="text-slate-300">{al.source_ip}</b> </span>}
+                          {al.target_user && <span>TGT: <b className="text-slate-300">{al.target_user}</b></span>}
+                        </div>
+                        {al.evidence.recommendation && (
+                          <p className="text-cyan-300/90 text-[10px] italic">
+                            Rec: {al.evidence.recommendation}
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>

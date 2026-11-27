@@ -72,6 +72,62 @@ SAMPLE_LOGS: Dict[str, Dict[str, Any]] = {
 2026-11-27T08:25:00Z,192.168.1.189,194.26.29.99,contractor_jake,C2_BEACON,DNS_TUNNEL_QUERY,BLOCKED,"{""domain"": ""tunnel-stage-verify.top"", ""query_type"": ""TXT""}"
 """
     },
+    "multi_ip_access": {
+        "filename": "multi_ip_account_access.json",
+        "format": "json",
+        "description": "User 'sarah.lead' accessed concurrently from 3 distinct global IPs (HQ, London, Sydney) within 5 minutes",
+        "content": """[
+  {
+    "timestamp": "2026-11-27T09:00:00Z",
+    "source_ip": "192.168.1.101",
+    "destination_ip": "10.0.0.5",
+    "user_identity": "sarah.lead",
+    "event_type": "AUTH_SUCCESS",
+    "action": "LOGIN_SSO",
+    "status": "SUCCESS",
+    "details": {"geo": "US-East", "client": "Chrome/131"}
+  },
+  {
+    "timestamp": "2026-11-27T09:02:15Z",
+    "source_ip": "185.199.108.153",
+    "destination_ip": "10.0.0.5",
+    "user_identity": "sarah.lead",
+    "event_type": "AUTH_SUCCESS",
+    "action": "LOGIN_WEB",
+    "status": "SUCCESS",
+    "details": {"geo": "GB-London", "client": "Firefox/132"}
+  },
+  {
+    "timestamp": "2026-11-27T09:04:40Z",
+    "source_ip": "203.0.113.195",
+    "destination_ip": "10.0.0.5",
+    "user_identity": "sarah.lead",
+    "event_type": "AUTH_FAILED",
+    "action": "API_AUTH",
+    "status": "FAILURE",
+    "details": {"geo": "AU-Sydney", "reason": "bad_token"}
+  }
+]"""
+    },
+    "activity_spike": {
+        "filename": "telemetry_activity_spike.csv",
+        "format": "csv",
+        "description": "Sudden volume surge of 12 rapid automated requests from external host 194.26.29.11 in 20 seconds",
+        "content": """timestamp,source_ip,destination_ip,user_identity,event_type,action,status,details
+2026-11-27T09:10:00Z,194.26.29.11,10.0.0.10,guest_user,API_REQUEST,ENDPOINT_PROBE,SUCCESS,"{""path"": ""/api/v1/auth""}"
+2026-11-27T09:10:01Z,194.26.29.11,10.0.0.10,guest_user,API_REQUEST,ENDPOINT_PROBE,SUCCESS,"{""path"": ""/api/v1/users""}"
+2026-11-27T09:10:02Z,194.26.29.11,10.0.0.10,guest_user,API_REQUEST,ENDPOINT_PROBE,SUCCESS,"{""path"": ""/api/v1/admin""}"
+2026-11-27T09:10:03Z,194.26.29.11,10.0.0.10,guest_user,API_REQUEST,ENDPOINT_PROBE,FAILURE,"{""path"": ""/api/v1/keys""}"
+2026-11-27T09:10:04Z,194.26.29.11,10.0.0.10,guest_user,API_REQUEST,ENDPOINT_PROBE,FAILURE,"{""path"": ""/api/v1/config""}"
+2026-11-27T09:10:05Z,194.26.29.11,10.0.0.10,guest_user,API_REQUEST,ENDPOINT_PROBE,FAILURE,"{""path"": ""/api/v1/secrets""}"
+2026-11-27T09:10:06Z,194.26.29.11,10.0.0.10,guest_user,API_REQUEST,ENDPOINT_PROBE,BLOCKED,"{""path"": ""/api/v1/tokens""}"
+2026-11-27T09:10:07Z,194.26.29.11,10.0.0.10,guest_user,API_REQUEST,ENDPOINT_PROBE,BLOCKED,"{""path"": ""/api/v1/certs""}"
+2026-11-27T09:10:08Z,194.26.29.11,10.0.0.10,guest_user,API_REQUEST,ENDPOINT_PROBE,BLOCKED,"{""path"": ""/api/v1/db""}"
+2026-11-27T09:10:09Z,194.26.29.11,10.0.0.10,guest_user,API_REQUEST,ENDPOINT_PROBE,BLOCKED,"{""path"": ""/api/v1/backup""}"
+2026-11-27T09:10:10Z,194.26.29.11,10.0.0.10,guest_user,API_REQUEST,ENDPOINT_PROBE,BLOCKED,"{""path"": ""/api/v1/export""}"
+2026-11-27T09:10:12Z,194.26.29.11,10.0.0.10,guest_user,API_REQUEST,ENDPOINT_PROBE,BLOCKED,"{""path"": ""/api/v1/upload""}"
+"""
+    },
     "enterprise_audit": {
         "filename": "enterprise_daily_audit.json",
         "format": "json",

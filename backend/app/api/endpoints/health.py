@@ -16,10 +16,12 @@ router = APIRouter()
 START_TIME = time.time()
 
 DETECTION_RULES_CATALOG = [
-    {"rule": "RULE_AUTH_BRUTE_FORCE", "description": "Repeated failed login attempts from single source IP", "severity": "HIGH/CRITICAL"},
-    {"rule": "RULE_AUTH_PASSWORD_SPRAYING", "description": "Single IP spraying multiple user accounts", "severity": "CRITICAL"},
-    {"rule": "RULE_HOST_SUDO_VIOLATION", "description": "Unauthorized privilege escalation attempts", "severity": "HIGH"},
-    {"rule": "RULE_PERIMETER_PORT_SCAN", "description": "Multi-port TCP SYN reconnaissance sweep", "severity": "MEDIUM/HIGH"},
+    {"rule": "RULE_AUTH_BRUTE_FORCE", "description": "Repeated failed login attempts against single account", "severity": "LOW/HIGH/CRITICAL"},
+    {"rule": "RULE_AUTH_PASSWORD_SPRAYING", "description": "Single IP attempting logins across multiple distinct user accounts", "severity": "HIGH/CRITICAL"},
+    {"rule": "RULE_MULTI_IP_ACCOUNT_ACCESS", "description": "Multiple distinct IP addresses accessing one user account concurrently", "severity": "MEDIUM/HIGH/CRITICAL"},
+    {"rule": "RULE_ACTIVITY_SPIKE", "description": "Abnormal volume surge of security events or connection requests in short window", "severity": "MEDIUM/HIGH/CRITICAL"},
+    {"rule": "RULE_HOST_SUDO_VIOLATION", "description": "Unauthorized privilege escalation and sudo policy violations", "severity": "HIGH/CRITICAL"},
+    {"rule": "RULE_PERIMETER_PORT_SCAN", "description": "Multi-port TCP SYN reconnaissance sweep and port probing", "severity": "MEDIUM/HIGH"},
     {"rule": "RULE_NETWORK_C2_BEACON", "description": "Outbound DNS tunneling & command-and-control beaconing", "severity": "HIGH"}
 ]
 
