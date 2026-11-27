@@ -9,6 +9,7 @@
 * **Frontend**: React 18, Vite, Tailwind CSS, Recharts, Lucide Icons
 * **Backend**: Python 3.13, FastAPI, SQLAlchemy 2.0, Pydantic V2
 * **Database**: PostgreSQL (Supabase compatible) / SQLite local fallback
+* **Detection Engine**: Correlated rule-based analysis (Brute Force, Password Spraying, Port Scan, Privilege Escalation, C2 Beacons)
 * **AI Analysis**: Gemini API (structured incident reasoning & defensive recommendations)
 * **Reports**: Automated PDF generator (ReportLab)
 
@@ -56,7 +57,17 @@ Open `http://localhost:5173` in your browser.
   - Recharts event timeline & failed login trend tracking
   - Active alert queue with rule correlation
   - Searchable live security event stream
-- [ ] **Module 2: Log Analyzer** (CSV/JSON upload, brute force detection, pattern parser)
+- [x] **Module 2: Log Analyzer & Threat Detection Engine**
+  - Multi-format ingestion: CSV, JSON array, NDJSON, and raw text paste
+  - Automated schema normalization across timestamps, IPs, users, and actions
+  - Rule-based correlation engine:
+    - `RULE_AUTH_BRUTE_FORCE`: Repeated failed logins from single IP
+    - `RULE_AUTH_PASSWORD_SPRAYING`: Single IP spraying multiple user accounts
+    - `RULE_HOST_SUDO_VIOLATION`: Unauthorized privilege escalation attempts
+    - `RULE_PERIMETER_PORT_SCAN`: Multi-port TCP SYN sweep detection
+    - `RULE_NETWORK_C2_BEACON`: Suspicious DNS tunneling & outbound beaconing
+  - Automated Alert generation with structured evidence
+  - Interactive Log Explorer with pagination, type/verdict filters, and JSON inspection
 - [ ] **Module 3: Threat Intelligence** (IP/Domain reputation scoring & indicator correlation)
 - [ ] **Module 4: AI Security Analyst** (Gemini API incident explanation & triage suggestions)
 - [ ] **Module 5: Incident Management** (Severity escalation, containment tracking, case history)

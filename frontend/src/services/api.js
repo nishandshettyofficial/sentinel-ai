@@ -70,39 +70,6 @@ export async function fetchRecentActivity(limit = 10) {
         status: 'BLOCKED',
         severity: 'CRITICAL',
         details: { port: 22, attempts: 5 }
-      },
-      {
-        id: 2,
-        timestamp: new Date(Date.now() - 15 * 60000).toISOString(),
-        event_type: 'C2_BEACON',
-        action: 'DNS_TUNNEL_QUERY',
-        source_ip: '192.168.1.77',
-        user_identity: 'workstation-07',
-        status: 'BLOCKED',
-        severity: 'HIGH',
-        details: { domain: 'sync-cdn-telemetry.xyz' }
-      },
-      {
-        id: 3,
-        timestamp: new Date(Date.now() - 35 * 60000).toISOString(),
-        event_type: 'PORT_SCAN',
-        action: 'TCP_SYN_SWEEP',
-        source_ip: '45.154.255.89',
-        user_identity: null,
-        status: 'BLOCKED',
-        severity: 'HIGH',
-        details: { scanned_ports: [22, 80, 443, 3389] }
-      },
-      {
-        id: 4,
-        timestamp: new Date(Date.now() - 60 * 60000).toISOString(),
-        event_type: 'AUTH_SUCCESS',
-        action: 'LOGIN_WEB',
-        source_ip: '192.168.1.105',
-        user_identity: 'sarah.dev',
-        status: 'SUCCESS',
-        severity: 'LOW',
-        details: { mfa: true }
       }
     ];
   }
@@ -115,29 +82,64 @@ export async function fetchRecentAlerts(limit = 6) {
     return await res.json();
   } catch (err) {
     console.warn('Alerts fetch failed, using fallback:', err);
-    return [
-      {
-        id: 101,
-        title: 'SSH Brute-Force Password Spraying Detected',
-        description: '5 consecutive failed attempts against root account from 185.220.101.45 within 10 minutes.',
-        severity: 'CRITICAL',
-        status: 'INVESTIGATING',
-        rule_name: 'RULE_AUTH_BRUTE_FORCE',
-        source_ip: '185.220.101.45',
-        target_user: 'root',
-        created_at: new Date().toISOString()
-      },
-      {
-        id: 102,
-        title: 'Suspected Command & Control (C2) DNS Tunneling',
-        description: 'High-frequency DNS queries to newly registered domain sync-cdn-telemetry.xyz.',
-        severity: 'HIGH',
-        status: 'NEW',
-        rule_name: 'RULE_NETWORK_C2_BEACON',
-        source_ip: '192.168.1.77',
-        target_user: 'workstation-07',
-        created_at: new Date(Date.now() - 25 * 60000).toISOString()
-      }
-    ];
+    return [];
   }
+}
+
+// ----------------- MODULE 2: LOG ANALYZER API -----------------
+
+export async function uploadLogFile(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch(`${BASE_URL}/api/v1/logs/upload`, {
+    method: 'POST',
+    body: formData
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Upload failed' }));
+    throw new Error(err.detail || 'Failed to upload log file');
+  }
+  return await res.json();
+}
+
+export async function ingestRawLogs(content, format = 'csv', filename = 'manual_entry') {
+  const res = await fetch(`${BASE_URL}/api/v1/logs/raw`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content, format, filename })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Ingestion failed' }));
+    throw new Error(err.detail || 'Failed to ingest raw logs');
+  }
+  return await res.json();
+}
+
+export async function fetchLogSamples() {
+  const res = await fetch(`${BASE_URL}/api/v1/logs/samples`);
+  if (!res.ok) throw new Error('Failed to fetch samples');
+  return await res.json();
+}
+
+export async function ingestSampleLog(sampleKey) {
+  const res = await fetch(`${BASE_URL}/api/v1/logs/sample/${sampleKey}`, {
+    method: 'POST'
+  });
+  if (!res.ok) throw new Error(`Failed to ingest sample ${sampleKey}`);
+  return await res.json();
+}
+
+export async function fetchLogRecords({ page = 1, limit = 20, search = '', eventType = 'ALL', status = 'ALL' } = {}) {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString()
+  });
+  if (search) params.append('search', search);
+  if (eventType && eventType !== 'ALL') params.append('event_type', eventType);
+  if (status && status !== 'ALL') params.append('status', status);
+
+  const res = await fetch(`${BASE_URL}/api/v1/logs/records?${params.toString()}`);
+  if (!res.ok) throw new Error('Failed to fetch log records');
+  return await res.json();
 }

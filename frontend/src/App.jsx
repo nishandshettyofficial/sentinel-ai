@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import DashboardView from './components/DashboardView';
+import LogAnalyzerView from './components/LogAnalyzerView';
 import { 
   fetchHealth, 
   fetchDashboardSummary, 
@@ -15,7 +16,6 @@ import {
   Bot, 
   AlertTriangle, 
   FileSpreadsheet,
-  CheckCircle2,
   Construction
 } from 'lucide-react';
 
@@ -86,13 +86,16 @@ export default function App() {
               />
             )}
 
-            {currentTab !== 'dashboard' && (
+            {currentTab === 'logs' && (
+              <LogAnalyzerView onTelemetryUpdated={loadData} />
+            )}
+
+            {currentTab !== 'dashboard' && currentTab !== 'logs' && (
               <div className="p-12 rounded-2xl bg-slate-900/40 border border-slate-800 text-center space-y-4 max-w-2xl mx-auto my-12">
                 <div className="w-14 h-14 rounded-2xl bg-cyan-950/80 border border-cyan-500/30 flex items-center justify-center mx-auto text-cyan-400 glow-cyan">
                   <Construction className="w-7 h-7 animate-bounce" />
                 </div>
                 <h3 className="text-lg font-bold text-white tracking-wide">
-                  {currentTab === 'logs' && 'Module 2: Log Analyzer (CSV / JSON)'}
                   {currentTab === 'threats' && 'Module 3: Threat Intelligence'}
                   {currentTab === 'ai' && 'Module 4: AI Security Analyst (Gemini)'}
                   {currentTab === 'incidents' && 'Module 5: Incident Management'}

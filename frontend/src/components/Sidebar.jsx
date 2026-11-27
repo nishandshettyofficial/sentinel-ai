@@ -12,7 +12,7 @@ import {
 
 const NAVIGATION_ITEMS = [
   { id: 'dashboard', name: 'Security Dashboard', icon: LayoutDashboard, badge: 'Live', active: true },
-  { id: 'logs', name: 'Log Analyzer', icon: FileText, badge: 'Mod 2', active: false },
+  { id: 'logs', name: 'Log Analyzer', icon: FileText, badge: 'Active', active: true },
   { id: 'threats', name: 'Threat Intelligence', icon: Globe2, badge: 'Mod 3', active: false },
   { id: 'ai', name: 'AI Security Analyst', icon: Bot, badge: 'Gemini', active: false },
   { id: 'incidents', name: 'Incident Management', icon: AlertTriangle, badge: 'Mod 5', active: false },
@@ -49,7 +49,9 @@ export default function Sidebar({ currentTab, onSelectTab, systemStatus }) {
                     <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
                       isSelected
                         ? 'bg-cyan-500/20 text-cyan-300'
-                        : 'bg-slate-800/80 text-slate-400'
+                        : item.badge === 'Active' || item.badge === 'Live'
+                          ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-500/30'
+                          : 'bg-slate-800/80 text-slate-400'
                     }`}>
                       {item.badge}
                     </span>
@@ -79,11 +81,11 @@ export default function Sidebar({ currentTab, onSelectTab, systemStatus }) {
             Perimeter firewall & log ingestion agents active across all subnets.
           </div>
           <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-            <div className="bg-gradient-to-r from-cyan-500 to-emerald-400 h-full w-[94%]"></div>
+            <div className="bg-gradient-to-r from-cyan-500 to-emerald-400 h-full w-[96%]"></div>
           </div>
           <div className="flex justify-between text-[10px] font-mono text-slate-500">
             <span>SOC Health</span>
-            <span>94% Nominal</span>
+            <span>96% Nominal</span>
           </div>
         </div>
       </div>
