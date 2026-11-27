@@ -4,6 +4,23 @@ import json
 import datetime
 from typing import List, Dict, Any, Tuple
 from dateutil import parser as date_parser
+from backend.app.core.errors import SentinelException
+
+MAX_LOG_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
+
+def validate_raw_log_content(content: str):
+    if not content or not content.strip():
+        raise SentinelException(
+            message="Uploaded log file is empty. Provide a valid CSV or JSON audit trail.",
+            code="EMPTY_LOG_FILE",
+            status_code=400
+        )
+    if "\x00" in content:
+        raise SentinelException(
+            message="Binary or non-text files are not supported as security audit logs.",
+            code="INVALID_FILE_FORMAT",
+            status_code=400
+        )
 
 def parse_timestamp(val: Any) -> datetime.datetime:
     if not val:
@@ -23,24 +40,25 @@ def parse_timestamp(val: Any) -> datetime.datetime:
 
 def normalize_event_dict(raw: Dict[str, Any]) -> Dict[str, Any]:
     # Extract timestamp
-    ts_field = raw.get("timestamp") or raw.get("time") or raw.get("@timestamp") or raw.get("datetime")
+    ts_field = raw.get("timestamp") or raw.get("time") or raw.get("@timestamp") or raw.get("datetime") or raw.get("date")
     timestamp = parse_timestamp(ts_field)
 
     # Extract source IP
     source_ip = (
         raw.get("source_ip") or raw.get("src_ip") or raw.get("ip") or 
-        raw.get("client_ip") or raw.get("remote_addr") or "0.0.0.0"
-    ).strip()
+        raw.get("client_ip") or raw.get("remote_addr") or raw.get("src") or "0.0.0.0"
+    )
+    source_ip = str(source_ip).strip()
 
     # Destination IP
-    dest_ip = raw.get("destination_ip") or raw.get("dst_ip") or raw.get("server_ip") or raw.get("host_ip")
+    dest_ip = raw.get("destination_ip") or raw.get("dst_ip") or raw.get("server_ip") or raw.get("host_ip") or raw.get("dst")
     if dest_ip:
         dest_ip = str(dest_ip).strip()
 
     # User identity
     user = (
         raw.get("user_identity") or raw.get("username") or raw.get("user") or 
-        raw.get("account") or raw.get("login")
+        raw.get("account") or raw.get("login") or raw.get("target_user")
     )
     if user:
         user = str(user).strip()
@@ -48,23 +66,26 @@ def normalize_event_dict(raw: Dict[str, Any]) -> Dict[str, Any]:
     # Event Type
     event_type = (
         raw.get("event_type") or raw.get("type") or raw.get("category") or 
-        raw.get("event") or "SECURITY_EVENT"
-    ).strip().upper()
+        raw.get("event") or raw.get("event_id") or "SECURITY_EVENT"
+    )
+    event_type = str(event_type).strip().upper()
 
     # Action
     action = (
         raw.get("action") or raw.get("operation") or raw.get("method") or "ACCESS"
-    ).strip().upper()
+    )
+    action = str(action).strip().upper()
 
     # Status
     status = (
-        raw.get("status") or raw.get("result") or raw.get("outcome") or "SUCCESS"
-    ).strip().upper()
-    if status in ["FAIL", "FAILED", "ERR", "ERROR", "DENIED", "REJECTED"]:
+        raw.get("status") or raw.get("result") or raw.get("outcome") or raw.get("verdict") or "SUCCESS"
+    )
+    status = str(status).strip().upper()
+    if status in ["FAIL", "FAILED", "ERR", "ERROR", "DENIED", "REJECTED", "401", "403"]:
         status = "FAILURE"
-    elif status in ["OK", "SUCCESSFUL", "PERMITTED", "ALLOW", "ALLOWED"]:
+    elif status in ["OK", "SUCCESSFUL", "PERMITTED", "ALLOW", "ALLOWED", "200"]:
         status = "SUCCESS"
-    elif status in ["BLOCK", "DROPPED", "MITIGATED"]:
+    elif status in ["BLOCK", "BLOCKED", "DROPPED", "MITIGATED", "QUARANTINED"]:
         status = "BLOCKED"
 
     # Details
@@ -75,14 +96,13 @@ def normalize_event_dict(raw: Dict[str, Any]) -> Dict[str, Any]:
         except Exception:
             details = {"raw_details": details}
     elif not details:
-        # Preserve other unrecognized keys in details
         known = {
-            "timestamp", "time", "@timestamp", "datetime",
-            "source_ip", "src_ip", "ip", "client_ip", "remote_addr",
-            "destination_ip", "dst_ip", "server_ip", "host_ip",
-            "user_identity", "username", "user", "account", "login",
-            "event_type", "type", "category", "event",
-            "action", "operation", "method", "status", "result", "outcome", "details"
+            "timestamp", "time", "@timestamp", "datetime", "date",
+            "source_ip", "src_ip", "ip", "client_ip", "remote_addr", "src",
+            "destination_ip", "dst_ip", "server_ip", "host_ip", "dst",
+            "user_identity", "username", "user", "account", "login", "target_user",
+            "event_type", "type", "category", "event", "event_id",
+            "action", "operation", "method", "status", "result", "outcome", "verdict", "details"
         }
         details = {k: v for k, v in raw.items() if k not in known}
 
@@ -99,29 +119,63 @@ def normalize_event_dict(raw: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 def parse_csv_content(content: str) -> Tuple[List[Dict[str, Any]], List[str]]:
+    validate_raw_log_content(content)
     parsed = []
     errors = []
-    reader = csv.DictReader(io.StringIO(content))
-    if not reader.fieldnames:
-        return [], ["Invalid or empty CSV: Missing header row."]
 
-    for idx, row in enumerate(reader, start=1):
-        try:
-            normalized = normalize_event_dict(row)
-            parsed.append(normalized)
-        except Exception as e:
-            errors.append(f"Line {idx}: {str(e)}")
+    # Check for valid CSV delimiter
+    first_line = content.strip().splitlines()[0]
+    if "," not in first_line and "\t" not in first_line and ";" not in first_line:
+        raise SentinelException(
+            message="Invalid CSV format: Missing valid column delimiters (comma, semicolon, or tab).",
+            code="INVALID_CSV_DELIMITER",
+            status_code=400
+        )
+
+    try:
+        reader = csv.DictReader(io.StringIO(content))
+        if not reader.fieldnames:
+            raise SentinelException(
+                message="Invalid CSV: Header row could not be extracted.",
+                code="INVALID_CSV_HEADER",
+                status_code=400
+            )
+
+        for idx, row in enumerate(reader, start=1):
+            try:
+                # Discard empty rows
+                if not any(row.values()):
+                    continue
+                normalized = normalize_event_dict(row)
+                parsed.append(normalized)
+            except Exception as e:
+                errors.append(f"Line {idx}: {str(e)}")
+
+    except SentinelException:
+        raise
+    except Exception as e:
+        raise SentinelException(
+            message=f"Failed to parse CSV log content: {str(e)}",
+            code="MALFORMED_CSV",
+            status_code=400
+        )
+
+    if not parsed:
+        raise SentinelException(
+            message="No valid security log records could be parsed from the provided CSV file.",
+            code="NO_PARSED_RECORDS",
+            status_code=400
+        )
 
     return parsed, errors
 
 def parse_json_content(content: str) -> Tuple[List[Dict[str, Any]], List[str]]:
+    validate_raw_log_content(content)
     parsed = []
     errors = []
     content_clean = content.strip()
-    if not content_clean:
-        return [], ["Empty JSON content."]
 
-    # Try parsing as standard JSON array or object
+    # Try standard JSON parsing first
     if content_clean.startswith("[") or content_clean.startswith("{"):
         try:
             data = json.loads(content_clean)
@@ -132,12 +186,19 @@ def parse_json_content(content: str) -> Tuple[List[Dict[str, Any]], List[str]]:
                     if isinstance(item, dict):
                         parsed.append(normalize_event_dict(item))
                     else:
-                        errors.append(f"Item {idx} is not a valid JSON object.")
+                        errors.append(f"Item #{idx} is not a valid JSON dictionary.")
                 except Exception as e:
-                    errors.append(f"Item {idx}: {str(e)}")
+                    errors.append(f"Item #{idx}: {str(e)}")
+
+            if not parsed and errors:
+                raise SentinelException(
+                    message=f"JSON parsing error: {errors[0]}",
+                    code="MALFORMED_JSON_ITEM",
+                    status_code=400
+                )
             return parsed, errors
-        except json.JSONDecodeError:
-            # Fallback to line-by-line NDJSON
+        except json.JSONDecodeError as jde:
+            # If not a standard array/object, try NDJSON line-by-line fallback
             pass
 
     # Process as Newline-Delimited JSON (NDJSON)
@@ -151,7 +212,14 @@ def parse_json_content(content: str) -> Tuple[List[Dict[str, Any]], List[str]]:
                 parsed.append(normalize_event_dict(item))
             else:
                 errors.append(f"Line {idx}: JSON value is not an object.")
-        except Exception as e:
-            errors.append(f"Line {idx}: {str(e)}")
+        except json.JSONDecodeError as jde:
+            errors.append(f"Line {idx}: Invalid JSON syntax - {jde.msg}")
+
+    if not parsed:
+        raise SentinelException(
+            message="Provided file is not valid JSON or NDJSON security log data.",
+            code="MALFORMED_JSON",
+            status_code=400
+        )
 
     return parsed, errors

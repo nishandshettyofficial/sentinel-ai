@@ -11,19 +11,23 @@ import {
   RefreshCw, 
   ChevronDown, 
   ChevronUp, 
-  Filter, 
+  Download, 
   ShieldCheck, 
   Ban, 
   ArrowRight,
   Flame,
-  Play
+  Play,
+  FileDown,
+  Clock
 } from 'lucide-react';
 import { 
   uploadLogFile, 
   ingestRawLogs, 
   fetchLogSamples, 
   ingestSampleLog, 
-  fetchLogRecords 
+  fetchLogRecords,
+  getSampleDownloadUrl,
+  getExportLogsUrl
 } from '../services/api';
 
 export default function LogAnalyzerView({ onTelemetryUpdated }) {
@@ -45,6 +49,7 @@ export default function LogAnalyzerView({ onTelemetryUpdated }) {
   const [search, setSearch] = useState('');
   const [eventTypeFilter, setEventTypeFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [timeRangeFilter, setTimeRangeFilter] = useState('ALL');
   const [isLoadingRecords, setIsLoadingRecords] = useState(false);
   const [expandedRowId, setExpandedRowId] = useState(null);
 
@@ -62,7 +67,8 @@ export default function LogAnalyzerView({ onTelemetryUpdated }) {
         limit: 15,
         search,
         eventType: eventTypeFilter,
-        status: statusFilter
+        status: statusFilter,
+        timeRange: timeRangeFilter
       });
       setRecords(res.items);
       setTotalRecords(res.total);
@@ -191,23 +197,36 @@ export default function LogAnalyzerView({ onTelemetryUpdated }) {
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Ingest CSV and JSON audit trails, parse system telemetry, evaluate rule-based brute force and authentication anomalies, and correlate alerts.
+            Upload CSV/JSON audit trails, validate formats, detect brute-force & suspicious authentication patterns, and correlate threat alerts.
           </p>
         </div>
 
-        {/* Quick Ingest Sample Button Pills */}
+        {/* Sample Ingestion and Downloads */}
         <div className="flex flex-wrap items-center gap-2">
           {samples.map((s) => (
-            <button
-              key={s.key}
-              onClick={() => handleSampleIngest(s.key)}
-              disabled={isProcessing}
-              className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-mono border border-slate-700 transition disabled:opacity-50"
-              title={s.description}
-            >
-              <Play className="w-3 h-3 text-cyan-400 fill-cyan-400" />
-              <span>{s.key === 'ssh_bruteforce' ? 'SSH Brute Force' : s.key === 'password_spraying' ? 'Password Spray' : 'Recon & Sudo'}</span>
-            </button>
+            <div key={s.key} className="inline-flex items-center rounded-lg bg-slate-800/80 border border-slate-700 p-0.5">
+              <button
+                onClick={() => handleSampleIngest(s.key)}
+                disabled={isProcessing}
+                className="flex items-center space-x-1.5 px-2.5 py-1 text-slate-200 hover:text-white text-xs font-mono transition disabled:opacity-50"
+                title={`Run detection on sample: ${s.description}`}
+              >
+                <Play className="w-3 h-3 text-cyan-400 fill-cyan-400" />
+                <span>
+                  {s.key === 'ssh_bruteforce' ? 'SSH Brute Force' : 
+                   s.key === 'password_spraying' ? 'Password Spray' : 
+                   s.key === 'recon_and_sudo' ? 'Recon & Sudo' : 'Enterprise Audit'}
+                </span>
+              </button>
+              <a
+                href={getSampleDownloadUrl(s.key)}
+                download={s.filename}
+                className="p-1 text-slate-400 hover:text-cyan-400 transition border-l border-slate-700/80"
+                title={`Download ${s.filename} to test file upload`}
+              >
+                <Download className="w-3 h-3" />
+              </a>
+            </div>
           ))}
         </div>
       </div>
@@ -240,7 +259,7 @@ export default function LogAnalyzerView({ onTelemetryUpdated }) {
             </button>
           </div>
           <span className="text-[11px] font-mono text-slate-500 hidden sm:inline">
-            Supports: RFC 4180 CSV, JSON Array, NDJSON
+            Max upload: 10MB • Enforces text encoding & schema safety
           </span>
         </div>
 
@@ -272,10 +291,10 @@ export default function LogAnalyzerView({ onTelemetryUpdated }) {
               <Upload className={`w-6 h-6 ${isProcessing ? 'animate-bounce' : ''}`} />
             </div>
             <p className="text-xs font-semibold text-slate-200">
-              {isProcessing ? 'Parsing Telemetry & Correlating Threats...' : 'Drop CSV or JSON log file here, or click to browse'}
+              {isProcessing ? 'Validating, Parsing & Correlating Telemetry...' : 'Drop CSV or JSON security log file here, or click to browse'}
             </p>
             <p className="text-[11px] text-slate-500 font-mono mt-1">
-              Automated schema normalization & threat signature matching
+              Supports standard authentication, audit, SSH, and web server logs
             </p>
           </div>
         )}
@@ -330,19 +349,23 @@ export default function LogAnalyzerView({ onTelemetryUpdated }) {
       {/* Analysis Result Banner & Detected Alerts Preview */}
       {uploadResult && (
         <div className={`p-4 rounded-xl border space-y-3 ${
-          uploadResult.alerts_detected > 0
-            ? 'bg-rose-950/20 border-rose-500/40'
-            : 'bg-emerald-950/20 border-emerald-500/40'
+          uploadResult.errors?.length > 0 && uploadResult.records_stored === 0
+            ? 'bg-rose-950/30 border-rose-500/50'
+            : uploadResult.alerts_detected > 0
+              ? 'bg-amber-950/20 border-amber-500/40'
+              : 'bg-emerald-950/20 border-emerald-500/40'
         }`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              {uploadResult.alerts_detected > 0 ? (
-                <Flame className="w-5 h-5 text-rose-400 animate-pulse" />
+              {uploadResult.errors?.length > 0 && uploadResult.records_stored === 0 ? (
+                <AlertTriangle className="w-5 h-5 text-rose-400" />
+              ) : uploadResult.alerts_detected > 0 ? (
+                <Flame className="w-5 h-5 text-amber-400 animate-pulse" />
               ) : (
                 <CheckCircle2 className="w-5 h-5 text-emerald-400" />
               )}
               <h3 className="text-xs font-bold font-mono text-white">
-                INGESTION COMPLETE: {uploadResult.filename}
+                {uploadResult.records_stored > 0 ? `INGESTION COMPLETE: ${uploadResult.filename}` : `FILE REJECTED: ${uploadResult.filename}`}
               </h3>
             </div>
             <div className="flex items-center space-x-3 text-xs font-mono">
@@ -353,16 +376,16 @@ export default function LogAnalyzerView({ onTelemetryUpdated }) {
                 Stored: <span className="text-emerald-400 font-bold">{uploadResult.records_stored}</span>
               </span>
               <span className="text-slate-400">
-                Threats Detected: <span className="text-rose-400 font-bold">{uploadResult.alerts_detected}</span>
+                Threats Flagged: <span className="text-rose-400 font-bold">{uploadResult.alerts_detected}</span>
               </span>
             </div>
           </div>
 
           {/* Errors list if any */}
           {uploadResult.errors?.length > 0 && (
-            <div className="p-2.5 rounded bg-slate-900 border border-amber-500/30 text-[11px] font-mono text-amber-300">
-              <p className="font-bold mb-1">Parsing Diagnostics ({uploadResult.errors.length} notices):</p>
-              <ul className="list-disc list-inside space-y-0.5 text-slate-400">
+            <div className="p-3 rounded bg-slate-900 border border-rose-500/40 text-[11px] font-mono text-rose-300">
+              <p className="font-bold mb-1">Diagnostic Notice:</p>
+              <ul className="list-disc list-inside space-y-0.5 text-slate-300">
                 {uploadResult.errors.map((err, i) => (
                   <li key={i}>{err}</li>
                 ))}
@@ -373,8 +396,8 @@ export default function LogAnalyzerView({ onTelemetryUpdated }) {
           {/* Generated Alerts Cards */}
           {uploadResult.alerts?.length > 0 && (
             <div className="space-y-2 pt-2 border-t border-slate-800">
-              <p className="text-[11px] font-mono text-rose-300 font-bold uppercase tracking-wider flex items-center space-x-1.5">
-                <ShieldAlert className="w-3.5 h-3.5" />
+              <p className="text-[11px] font-mono text-amber-300 font-bold uppercase tracking-wider flex items-center space-x-1.5">
+                <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
                 <span>Correlated Threat Alerts Generated:</span>
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -404,24 +427,25 @@ export default function LogAnalyzerView({ onTelemetryUpdated }) {
 
       {/* Database Log Records Explorer */}
       <div className="p-5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-4">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
           <div>
             <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-2">
               <FileText className="w-4 h-4 text-cyan-400" />
               <span>Parsed Security Event Repository</span>
             </h3>
             <p className="text-[11px] text-slate-500">
-              Showing {records.length} of {totalRecords} normalized security records
+              Showing {records.length} of {totalRecords} records • Real-time query & investigation
             </p>
           </div>
 
-          {/* Search & Filter Controls */}
-          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-            <div className="relative flex-1 md:w-56">
+          {/* Search, Time Filters & Export Controls */}
+          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+            {/* Search Input */}
+            <div className="relative flex-1 sm:w-48">
               <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
               <input
                 type="text"
-                placeholder="Search IP, user, type..."
+                placeholder="Search IP, user..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && loadRecords(1)}
@@ -429,12 +453,26 @@ export default function LogAnalyzerView({ onTelemetryUpdated }) {
               />
             </div>
 
+            {/* Time Range Filter */}
+            <select
+              value={timeRangeFilter}
+              onChange={(e) => { setTimeRangeFilter(e.target.value); setTimeout(() => loadRecords(1), 0); }}
+              className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-xs font-mono text-slate-300 focus:outline-none"
+            >
+              <option value="ALL">All Time</option>
+              <option value="1h">Last 1 Hour</option>
+              <option value="6h">Last 6 Hours</option>
+              <option value="24h">Last 24 Hours</option>
+              <option value="7d">Last 7 Days</option>
+            </select>
+
+            {/* Event Type Filter */}
             <select
               value={eventTypeFilter}
               onChange={(e) => { setEventTypeFilter(e.target.value); setTimeout(() => loadRecords(1), 0); }}
-              className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-300 focus:outline-none"
+              className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-xs font-mono text-slate-300 focus:outline-none"
             >
-              <option value="ALL">All Types</option>
+              <option value="ALL">All Event Types</option>
               <option value="AUTH_FAILED">AUTH_FAILED</option>
               <option value="AUTH_SUCCESS">AUTH_SUCCESS</option>
               <option value="PORT_SCAN">PORT_SCAN</option>
@@ -442,17 +480,19 @@ export default function LogAnalyzerView({ onTelemetryUpdated }) {
               <option value="PRIVILEGE_ESCALATION">PRIVILEGE_ESCALATION</option>
             </select>
 
+            {/* Status Filter */}
             <select
               value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value); setTimeout(() => loadRecords(1), 0); }}
-              className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-300 focus:outline-none"
+              className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-xs font-mono text-slate-300 focus:outline-none"
             >
-              <option value="ALL">All Status</option>
-              <option value="SUCCESS">SUCCESS</option>
-              <option value="FAILURE">FAILURE</option>
+              <option value="ALL">All Verdicts</option>
+              <option value="SUCCESS">ALLOW</option>
+              <option value="FAILURE">FAIL</option>
               <option value="BLOCKED">BLOCKED</option>
             </select>
 
+            {/* Refresh Button */}
             <button
               onClick={() => loadRecords(page)}
               className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
@@ -460,6 +500,26 @@ export default function LogAnalyzerView({ onTelemetryUpdated }) {
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLoadingRecords ? 'animate-spin text-cyan-400' : ''}`} />
             </button>
+
+            {/* Export Dropdown */}
+            <div className="flex items-center space-x-1">
+              <a
+                href={getExportLogsUrl({ format: 'csv', search, eventType: eventTypeFilter, status: statusFilter })}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 text-xs font-mono border border-slate-700 transition"
+                title="Export filtered records as CSV"
+              >
+                <FileDown className="w-3.5 h-3.5" />
+                <span>CSV</span>
+              </a>
+              <a
+                href={getExportLogsUrl({ format: 'json', search, eventType: eventTypeFilter, status: statusFilter })}
+                className="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-cyan-400 text-xs font-mono border border-slate-700 transition"
+                title="Export filtered records as JSON"
+              >
+                <FileCode className="w-3.5 h-3.5" />
+                <span>JSON</span>
+              </a>
+            </div>
           </div>
         </div>
 
@@ -470,11 +530,11 @@ export default function LogAnalyzerView({ onTelemetryUpdated }) {
               <tr>
                 <th className="py-2.5 px-3">Timestamp (UTC)</th>
                 <th className="py-2.5 px-3">Event Type</th>
-                <th className="py-2.5 px-3">Action</th>
+                <th className="py-2.5 px-3">Action / Activity</th>
                 <th className="py-2.5 px-3">Source IP</th>
-                <th className="py-2.5 px-3">Target User</th>
+                <th className="py-2.5 px-3">Target Identity</th>
                 <th className="py-2.5 px-3">Verdict</th>
-                <th className="py-2.5 px-3 text-right">Details</th>
+                <th className="py-2.5 px-3 text-right">Inspection</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
@@ -532,7 +592,7 @@ export default function LogAnalyzerView({ onTelemetryUpdated }) {
                                 </div>
                               </div>
                               <div>
-                                <p className="text-[10px] text-slate-500 uppercase mb-1">Payload / Details JSON</p>
+                                <p className="text-[10px] text-slate-500 uppercase mb-1">Parsed JSON Payload</p>
                                 <pre className="p-2.5 rounded bg-slate-900 text-[11px] text-slate-300 overflow-x-auto border border-slate-800">
                                   {JSON.stringify(row.details || {}, null, 2)}
                                 </pre>
@@ -552,7 +612,7 @@ export default function LogAnalyzerView({ onTelemetryUpdated }) {
         {/* Pagination Controls */}
         <div className="flex items-center justify-between text-xs font-mono text-slate-400 pt-2">
           <span>
-            Page {page} of {totalPages}
+            Page {page} of {totalPages} ({totalRecords} total events)
           </span>
           <div className="flex items-center space-x-2">
             <button

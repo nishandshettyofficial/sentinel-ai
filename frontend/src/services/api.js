@@ -119,6 +119,10 @@ export async function fetchLogSamples() {
   return await res.json();
 }
 
+export function getSampleDownloadUrl(sampleKey) {
+  return `${BASE_URL}/api/v1/logs/sample/${sampleKey}/download`;
+}
+
 export async function ingestSampleLog(sampleKey) {
   const res = await fetch(`${BASE_URL}/api/v1/logs/sample/${sampleKey}`, {
     method: 'POST'
@@ -127,7 +131,7 @@ export async function ingestSampleLog(sampleKey) {
   return await res.json();
 }
 
-export async function fetchLogRecords({ page = 1, limit = 20, search = '', eventType = 'ALL', status = 'ALL' } = {}) {
+export async function fetchLogRecords({ page = 1, limit = 20, search = '', eventType = 'ALL', status = 'ALL', timeRange = 'ALL' } = {}) {
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString()
@@ -135,8 +139,17 @@ export async function fetchLogRecords({ page = 1, limit = 20, search = '', event
   if (search) params.append('search', search);
   if (eventType && eventType !== 'ALL') params.append('event_type', eventType);
   if (status && status !== 'ALL') params.append('status', status);
+  if (timeRange && timeRange !== 'ALL') params.append('time_range', timeRange);
 
   const res = await fetch(`${BASE_URL}/api/v1/logs/records?${params.toString()}`);
   if (!res.ok) throw new Error('Failed to fetch log records');
   return await res.json();
+}
+
+export function getExportLogsUrl({ format = 'csv', search = '', eventType = 'ALL', status = 'ALL' } = {}) {
+  const params = new URLSearchParams({ format });
+  if (search) params.append('search', search);
+  if (eventType && eventType !== 'ALL') params.append('event_type', eventType);
+  if (status && status !== 'ALL') params.append('status', status);
+  return `${BASE_URL}/api/v1/logs/export?${params.toString()}`;
 }

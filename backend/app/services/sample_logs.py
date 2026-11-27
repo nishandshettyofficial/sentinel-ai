@@ -71,5 +71,52 @@ SAMPLE_LOGS: Dict[str, Dict[str, Any]] = {
 2026-11-27T08:22:15Z,192.168.1.189,10.0.0.25,contractor_jake,PRIVILEGE_ESCALATION,SUDO_EXEC,FAILURE,"{""command"": ""sudo su - root"", ""terminal"": ""pts/1""}"
 2026-11-27T08:25:00Z,192.168.1.189,194.26.29.99,contractor_jake,C2_BEACON,DNS_TUNNEL_QUERY,BLOCKED,"{""domain"": ""tunnel-stage-verify.top"", ""query_type"": ""TXT""}"
 """
+    },
+    "enterprise_audit": {
+        "filename": "enterprise_daily_audit.json",
+        "format": "json",
+        "description": "Realistic enterprise authentication log with normal engineering logins and single anomaly",
+        "content": """[
+  {
+    "timestamp": "2026-11-27T07:45:00Z",
+    "source_ip": "192.168.1.101",
+    "destination_ip": "10.0.0.5",
+    "user_identity": "sarah.lead",
+    "event_type": "AUTH_SUCCESS",
+    "action": "LOGIN_SSO",
+    "status": "SUCCESS",
+    "details": {"mfa_method": "FIDO2_WEBAUTHN", "device": "MacBook-Air-M3"}
+  },
+  {
+    "timestamp": "2026-11-27T07:50:00Z",
+    "source_ip": "192.168.1.115",
+    "destination_ip": "10.0.0.8",
+    "user_identity": "alex.analyst",
+    "event_type": "AUTH_SUCCESS",
+    "action": "SSH_LOGIN",
+    "status": "SUCCESS",
+    "details": {"key_fingerprint": "SHA256:d8c23...", "port": 22}
+  },
+  {
+    "timestamp": "2026-11-27T07:52:10Z",
+    "source_ip": "192.168.1.140",
+    "destination_ip": "10.0.0.20",
+    "user_identity": "app-daemon",
+    "event_type": "API_ACCESS",
+    "action": "TOKEN_REFRESH",
+    "status": "SUCCESS",
+    "details": {"scope": "metrics:read"}
+  },
+  {
+    "timestamp": "2026-11-27T07:55:00Z",
+    "source_ip": "185.220.101.45",
+    "destination_ip": "10.0.0.5",
+    "user_identity": "root",
+    "event_type": "AUTH_FAILED",
+    "action": "SSH_LOGIN",
+    "status": "FAILURE",
+    "details": {"port": 22, "failure_reason": "key_rejected"}
+  }
+]"""
     }
 }
