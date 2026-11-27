@@ -207,3 +207,37 @@ export async function fetchThreatIntelStatus() {
   if (!res.ok) throw new Error('Failed to fetch threat intel provider status');
   return await res.json();
 }
+
+// ----------------- MODULE 4: AI SECURITY ANALYST API (GEMINI) -----------------
+
+export async function fetchAIAnalystExplanation(alertId) {
+  const res = await fetch(`${BASE_URL}/api/v1/ai-analyst/explain/${alertId}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: { message: 'Failed to explain alert' } }));
+    throw new Error(err.error?.message || err.detail || 'Failed to explain alert');
+  }
+  return await res.json();
+}
+
+export async function sendAIAnalystChat({ message, alertId = null, chatHistory = [] }) {
+  const res = await fetch(`${BASE_URL}/api/v1/ai-analyst/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message,
+      alert_id: alertId,
+      chat_history: chatHistory
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: { message: 'Chat request failed' } }));
+    throw new Error(err.error?.message || err.detail || 'Failed to communicate with AI Analyst');
+  }
+  return await res.json();
+}
+
+export async function fetchAIAnalystStatus() {
+  const res = await fetch(`${BASE_URL}/api/v1/ai-analyst/status`);
+  if (!res.ok) throw new Error('Failed to fetch AI Analyst status');
+  return await res.json();
+}

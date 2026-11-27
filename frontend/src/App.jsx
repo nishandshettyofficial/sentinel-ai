@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import DashboardView from './components/DashboardView';
 import LogAnalyzerView from './components/LogAnalyzerView';
 import ThreatIntelView from './components/ThreatIntelView';
+import AIAnalystView from './components/AIAnalystView';
 import { 
   fetchHealth, 
   fetchDashboardSummary, 
@@ -95,7 +96,11 @@ export default function App() {
               <ThreatIntelView onNavigateToLogs={(indicator) => setCurrentTab('logs')} />
             )}
 
-            {currentTab !== 'dashboard' && currentTab !== 'logs' && currentTab !== 'threats' && (
+            {currentTab === 'ai' && (
+              <AIAnalystView alerts={alerts} />
+            )}
+
+            {currentTab !== 'dashboard' && currentTab !== 'logs' && currentTab !== 'threats' && currentTab !== 'ai' && (
               <div className="p-12 rounded-2xl bg-slate-900/40 border border-slate-800 text-center space-y-4 max-w-2xl mx-auto my-12">
                 <div className="w-14 h-14 rounded-2xl bg-cyan-950/80 border border-cyan-500/30 flex items-center justify-center mx-auto text-cyan-400 glow-cyan">
                   <Construction className="w-7 h-7 animate-bounce" />

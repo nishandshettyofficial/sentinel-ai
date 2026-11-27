@@ -14,7 +14,7 @@ const NAVIGATION_ITEMS = [
   { id: 'dashboard', name: 'Security Dashboard', icon: LayoutDashboard, badge: 'Live', active: true },
   { id: 'logs', name: 'Log Analyzer', icon: FileText, badge: 'Active', active: true },
   { id: 'threats', name: 'Threat Intelligence', icon: Globe2, badge: 'Active', active: true },
-  { id: 'ai', name: 'AI Security Analyst', icon: Bot, badge: 'Gemini', active: false },
+  { id: 'ai', name: 'AI Security Analyst', icon: Bot, badge: 'Active', active: true },
   { id: 'incidents', name: 'Incident Management', icon: AlertTriangle, badge: 'Mod 5', active: false },
   { id: 'reports', name: 'Reports Generator', icon: FileSpreadsheet, badge: 'PDF', active: false }
 ];
